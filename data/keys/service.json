@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "reliable-banner-375017",
+  "private_key_id": "fcfefeff80d3259c839aef744407e2e7c2a696bd",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCtntckEez9mkDl\naopKWVPvXqr7jWFxnJzKRERHYDg3NkfYvWaFvfR3xARwn8jpzDgpWg9YosSPaA1M\nMWAohZrBJNardN5yUwnwGHRh13xQg0r08G2H+bkJBrN0XmHVbiU1vyiwuGagD3Ef\ne9/fEV7A7TxvsPjjUxsHPqOEyl6Ywe7SR4YJIPbd1UgGKhQHRi/N2XEj1XJgDw3l\nnL6dAbh8oMn0Sz87Cn+2RMedwwtt/dQGDWWY24LiHn1Taar2eGKeYIQDXLOEoFeq\nmY3BcZDvv8zIp1xaQxOOIi9XUnK8QVwPhm+3Qsg0HyNIZFy7K28pp1phh66sgUN3\ngToDHwqXAgMBAAECggEACUnAFKvo08BWzG8gqs2QkfOsjfyIQ/2u3Zs9U9wv5bQ/\nr7aiL3F0DJwt6KCDrQ5ByuSIgaNjhJB6daMGk+Rh3QdNfKqp48/RbkjAoSNYAS6k\n6ema0nVnkrYLD6Sk8zgLQY7SbHHQ+6sX0CleVp6lRQjr/MWo6vBdN8wAD3CMEvvm\nS7N6WPeWkwshva34HkS0qnLdZc3AGvlqTjPhrM00iaYuYfpJySN6NnqmZMSzbncE\ni3nRpXjJ3w2pe+3jceZIikQS7LLtaItu0cGmLOwsSGuvJafqVtort0dUeSexUy6y\nNKLgTMrqH416qMBJaw9cQX6SlgtrU38k4WbSLUrhYQKBgQDrLGZbyt0tHayPrRMF\nrY5PPMUjnKjhoLiUaSpUsIT4x4/rr9KjrjZ+FRHvPrVYt8odxqsYb+UkJiRxORQT\nQ1M8L1m/Zl7UOnlaV2EqSAL6Zd86ci7RLj1TS1FfXrWRklbdsWXrFANK9e2FwjP/\nbc8ep7MQEgKleV6i1PmWvBMsfwKBgQC8/vpHkFdj6vgIdlF8JtZ59zE6pAFYeIuv\nG+dlo40nLxlWAT7w4GoINFbaKowBDC8cb7H0bBtdbndObsnh5rcnRRHHn6GR7fFL\ng2CzBZm5+1lf25PaRF+Fcu5UY8poVB5hgF3I3EJX0uMIZ76XLg1b+2Urc7xt5bPC\nVEbUMOr16QKBgE8oG6/r4XRtF4cov01a9JqRHt30vhdrzJUPrNLis281ZKj0/lZf\nrjHUD7xShCG/gwVwuGg6SYtYV03Q44P0VlDcsz2sTGDs6anR3X+oy2/S2EdI5Z89\nDCE8KcCLFVxRQHHQYziz/MO/cVpjWrMwF9X+plPTbBacepEeVIA6/80rAoGBAJ2l\nagsLoXmc42vblbijhL+Tq6Kobt7nHkzgT7H+LJ2EsfOFcoTmDEvvrIqqdsHg8eMc\nYCnrix/yJt5rl0YxdpDxEhWbV+Arw9wjKCPsBgCWYkSNGdU0tyDPb3FBE/LWR8k4\nlAIZh9VN+UZnkxjztv0Ew6ztCz34Hmt4dORGMZcRAoGBAJHmWyfOWSGTUEmiC4zv\nQiuDhPndxTlOIg9fJ9bQXiJMfBuJMvNLB5DmYbeGmfCAFgeP10mUsyi1aJWiGw4G\nQrTq/fCTx7iU9iPeQ/Mmk4550ovrl1tGfoAAx4hFinEofmhV5QVHJXnQcNicwnWF\nqF28BsGhWXiueoaCcqQNuq2J\n-----END PRIVATE KEY-----\n",
+  "client_email": "cellfabrik@reliable-banner-375017.iam.gserviceaccount.com",
+  "client_id": "111511743732827832122",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/cellfabrik%40reliable-banner-375017.iam.gserviceaccount.com"
+}

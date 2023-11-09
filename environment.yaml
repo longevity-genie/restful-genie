@@ -1,0 +1,22 @@
+name: biotables
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - jupyterlab
+  - jupyter
+  - click
+  - pandas
+  - pip
+  - pip:
+      - pycomfort
+      - gspread
+      - polars
+      - getpaper>=0.3.1
+      - indexpaper>=0.0.11
+      - langchain>=0.0.330
+      - langserve>=0.0.23
+      - sse_starlette
+      - langchain-cli
