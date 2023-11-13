@@ -3,5 +3,23 @@
   "dependencies": {
   },
   "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  "runtimeVersion": "V8",
+  "addOns": {
+    "common": {
+      "name": "Biotables",
+      "logoUrl": "https://longevity-genie.github.io/images/icon.png",
+      "layoutProperties": {
+        "primaryColor": "#2769e2"
+      },
+      "useLocaleFromApp": true
+    },
+    "sheets": {
+      "homepageTrigger": {
+        "runFunction": "onOpen"
+      }
+    }
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets"
+  ]
 }

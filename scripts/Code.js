@@ -1,5 +1,9 @@
 var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
+function onOpen{
+    //execute something on opening
+}
+
 function GPT(textValue, model_name='gpt-3.5-turbo', temperature=0.0, resplit = true,  host='http://agingkills.eu:8000'. api = "/papers", limit=1) {
   var data = {
     'model_name': model_name,
