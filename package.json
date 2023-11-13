@@ -5,10 +5,14 @@
   "author": "Anton Kulaga",
   "license": "MIT",
   "dependencies": {
-
   },
   "devDependencies": {
     "yarn": "^1.22.19",
     "@google/clasp": "2.4.2"
+  },
+  "scripts": {
+    "deploy:dev": "clasp deploy --description 'Biotables development release'",
+    "deploy:prod": "clasp deploy --description 'Biotables production release'"
   }
+
 }

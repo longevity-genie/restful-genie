@@ -27,8 +27,8 @@ function GPT_4(textValue, temperature=0.0) {
     return GPT(textValue, model_name='gpt-4', temperature=temperature)
 }
 
-function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5',
-    host='http://agingkills.eu:8000'. api = "/papers", limit=1, with_vectors=false, with_payload=true, resplit = true) {
+function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5', host='http://agingkills.eu:8000'. api = "/papers", limit=1, with_vectors=false, with_payload=true, resplit = true)
+{
       var data = {
         'text': textValue,
         'collection_name': 'bge_base_en_v1.5_aging_5',
