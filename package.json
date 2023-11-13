@@ -1,0 +1,14 @@
+{
+  "name": "biotables",
+  "version": "0.0.1",
+  "description": "Google spreadsheet extension to deal with GPT and semantic search",
+  "author": "Anton Kulaga",
+  "license": "MIT",
+  "dependencies": {
+
+  },
+  "devDependencies": {
+    "yarn": "^1.22.19",
+    "@google/clasp": "2.4.2"
+  }
+}

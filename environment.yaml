@@ -17,6 +17,7 @@ dependencies:
       - getpaper>=0.3.1
       - indexpaper>=0.0.11
       - langchain>=0.0.330
-      - langserve>=0.0.23
+      - langserve>=0.0.26
       - sse_starlette
       - langchain-cli
+      - uvicorn[standard]
