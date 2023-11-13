@@ -160,6 +160,4 @@ cython_debug/
 .idea/
 local_cache
 node_modules
-local_cache
-scripts/.clasp.json
 yarn.lock

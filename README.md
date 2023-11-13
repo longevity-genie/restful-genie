@@ -28,5 +28,5 @@ clasp clone "1iIXMPhK9hx5J7RbKQ-AwacjDwtZMN3BgaTXvV99U10HJCthDLVYvSbUQ"
 To push changes use:
 ```bash
 cd scripts
-clasp push
+clasp push --force
 ```
