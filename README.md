@@ -21,12 +21,12 @@ wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 nvm install node
 npm install -g @google/clasp
 clasp login
-cd scripts
-clasp clone "1iIXMPhK9hx5J7RbKQ-AwacjDwtZMN3BgaTXvV99U10HJCthDLVYvSbUQ"
+clasp pull
 ```
 
 To push changes use:
 ```bash
-cd scripts
 clasp push --force
 ```
+
+By default, the project is published from genielongevity@gmail.com

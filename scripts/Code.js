@@ -1,12 +1,4 @@
-/*
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('Hello World')
-    .addItem('Say Hello', 'showHelloWorld')
-    .addToUi();
-}
-*/
-
+var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
 function GPT(textValue, model_name='gpt-3.5-turbo', temperature=0.0, resplit = true,  host='http://agingkills.eu:8000'. api = "/papers", limit=1) {
   var data = {
