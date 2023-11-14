@@ -1,18 +1,17 @@
 #!/usr/bin/env python
-import asyncio
 import os
-from typing import List, Optional
+from typing import Optional
 
 import loguru
 from fastapi import FastAPI, HTTPException
-from langchain.prompts import ChatPromptTemplate
-from langchain.chat_models import ChatAnthropic, ChatOpenAI
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.decorator import cache
+from langchain.chat_models import ChatOpenAI
 from langserve import add_routes
-from langchain.schema.runnable import RunnableLambda
 from pycomfort.config import load_environment_keys
 from pydantic import BaseModel
-from qdrant_client import QdrantClient, qdrant_client
-from qdrant_client.fastembed_common import QueryResponse
+from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
 
 load_environment_keys(usecwd=True)
@@ -35,10 +34,13 @@ client = QdrantClient(
 client.set_model("BAAI/bge-base-en-v1.5")
 
 app = FastAPI(
-    title="Biotable server",
-    version="1.0",
-    description="API server to handle",
+# Initialize FastAPI cache with in-memory backend
+title="Biotable server",
+version="1.0",
+description="API server to handle",
 )
+
+FastAPICache.init(InMemoryBackend())
 
 add_routes(
     app,
@@ -56,12 +58,14 @@ class SettingsLLM(BaseModel):
 
 class QueryLLM(SettingsLLM):
     text: str
+    cachable: bool = True
 
 def make_llm(query: QueryLLM) -> ChatOpenAI:
+    key_value = None if query.key is None or query.key == "string" else query.key
     return ChatOpenAI(
         model_name = query.model_name,
         temperature = query.temperature,
-        openai_api_key = query.key
+        openai_api_key = key_value
     )
 
 
@@ -69,10 +73,13 @@ default_settings: SettingsLLM = SettingsLLM(key=env_key)
 
 default_llm = make_llm(default_settings)
 
+@cache(expire=600)
 @app.post("/gpt/", response_model=str)
-async def get_papers(query: QueryLLM):
+async def ask_gpt(query: QueryLLM):
     llm = default_llm if default_settings.same_settings(query) else make_llm(query)
     result = llm.invoke(query.text)
+    #loguru.logger.info("RESPONSE WAS:")
+    #loguru.logger.info(result)
     return result.content
 
 
@@ -85,6 +92,7 @@ class QueryPaper(BaseModel):
     db: Optional[str] = None
     limit: int = 1
 
+@cache(expire=600)
 @app.post("/papers/")
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
@@ -112,7 +120,7 @@ async def get_papers(query: QueryPaper):
             )
         else:
             doi_filter = None
-        if text is None:
+        if text is None or text is "string":
             results = database.scroll(collection_name=collection_name, scroll_filter=doi_filter, with_payload=query.with_payload, with_vectors=query.with_vectors, limit=query.limit)
         else:
             results = database.query(collection_name=collection_name, query_text=text, query_filter=doi_filter, with_vectors=query.with_vectors, limit=query.limit)
