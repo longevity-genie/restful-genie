@@ -73,7 +73,7 @@ default_settings: SettingsLLM = SettingsLLM(key=env_key)
 
 default_llm = make_llm(default_settings)
 
-@cache(expire=600)
+@cache(expire=3600)
 @app.post("/gpt/", response_model=str)
 async def ask_gpt(query: QueryLLM):
     llm = default_llm if default_settings.same_settings(query) else make_llm(query)
@@ -92,7 +92,7 @@ class QueryPaper(BaseModel):
     db: Optional[str] = None
     limit: int = 1
 
-@cache(expire=600)
+@cache(expire=3600)
 @app.post("/papers/")
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
@@ -132,8 +132,5 @@ async def get_papers(query: QueryPaper):
 
 
 if __name__ == "__main__":
-    loguru.logger.info("INFO")
-    #results = asyncio.run(get_papers(QueryPaper(doi = "10.3389/fpsyg.2019.02038", db = env_db)))
-    #loguru.logger.info(results)
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
