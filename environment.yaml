@@ -14,11 +14,13 @@ dependencies:
       - pycomfort
       - gspread
       - polars
-      - getpaper>=0.3.1
-      - indexpaper>=0.0.11
+      - getpaper>=0.3.7
+      - indexpaper>=0.0.15
       - langchain>=0.0.333
       - langserve>=0.0.27
       - sse_starlette
       - langchain-cli
       - uvicorn[standard]
-      - fastapi-cache2
+      - git+https://github.com/antonkulaga/fastapi-cache.git
+      - pdfminer
+      - redis

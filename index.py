@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union, List
+from getpaper.parse import download_and_parse
 
 import loguru
 from fastapi import FastAPI, HTTPException
@@ -14,8 +16,16 @@ from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
 
+from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper
+
 load_environment_keys(usecwd=True)
+
+from biotables.locations import Locations
+locations = Locations(Path("."))
+
+expires = os.getenv("EXPIRES", 3600)
 env_db = os.getenv("DATABASE_URL")
+loguru.logger.add("logs/biotables.log", rotation="10 MB")
 if env_db is None:
     loguru.logger.error(f"URL is none and DATABASE_URL environment variable is not set, using default value instead")
     url = "https://5bea7502-97d4-4876-98af-0cdf8af4bd18.us-east-1-0.aws.cloud.qdrant.io:6333"
@@ -23,6 +33,7 @@ else:
     url = env_db
 
 env_key = os.getenv("OPENAI_API_KEY")
+env_embed_model= os.getenv("EMBED_MODEL", "BAAI/bge-base-en-v1.5")
 
 client = QdrantClient(
     url=url,
@@ -31,13 +42,15 @@ client = QdrantClient(
     prefer_grpc=True,
     api_key=os.getenv("QDRANT_KEY")
 )
-client.set_model("BAAI/bge-base-en-v1.5")
+
+client.set_model(env_embed_model)
 
 app = FastAPI(
-# Initialize FastAPI cache with in-memory backend
-title="Biotable server",
-version="1.0",
-description="API server to handle",
+    # Initialize FastAPI cache with in-memory backend
+    title="Biotable server",
+    version="1.1",
+    description="API server to handle queries to biotables",
+    debug=True
 )
 
 FastAPICache.init(InMemoryBackend())
@@ -48,52 +61,34 @@ add_routes(
     path="/openai"
 )
 
-class SettingsLLM(BaseModel):
-    model_name: str = "gpt-3.5-turbo"
-    key: Optional[str] = None
-    temperature: float = 0.0
-
-    def same_settings(self, query: 'QueryLLM') -> bool:
-        return self.model_name == query.model_name and self.key == query.key and self.temperature == query.temperature
-
-class QueryLLM(SettingsLLM):
-    text: str
-    cachable: bool = True
-
-def make_llm(query: QueryLLM) -> ChatOpenAI:
-    key_value = None if query.key is None or query.key == "string" else query.key
-    return ChatOpenAI(
-        model_name = query.model_name,
-        temperature = query.temperature,
-        openai_api_key = key_value
-    )
-
 
 default_settings: SettingsLLM = SettingsLLM(key=env_key)
 
-default_llm = make_llm(default_settings)
+default_llm = default_settings.make_openai_chat()
 
-@cache(expire=3600)
 @app.post("/gpt/", response_model=str)
+@cache(expire=expires)
 async def ask_gpt(query: QueryLLM):
-    llm = default_llm if default_settings.same_settings(query) else make_llm(query)
-    result = llm.invoke(query.text)
+    llm = default_llm if default_settings.same_settings(query) else query.make_openai_chat()
+    result = await llm.ainvoke(query.text)
     #loguru.logger.info("RESPONSE WAS:")
     #loguru.logger.info(result)
     return result.content
 
 
-class QueryPaper(BaseModel):
-    doi: Optional[str] = None
-    text: Optional[str] = None
-    collection_name: str = "bge_base_en_v1.5_aging_5"
-    with_vectors: bool = False
-    with_payload: bool = True
-    db: Optional[str] = None
-    limit: int = 1
 
-@cache(expire=3600)
+@app.post("/ask_paper/", response_model=List[str])
+@cache(expire=expires)
+async def ask_paper(paper: AskPaper):
+    folders: List[Path] = download_and_parse(paper.doi, locations.papers, subfolder=True, do_not_reparse=True)
+    if len(folders) <1:
+        loguru.logger.error(f"nothing was downloaded/parsed for {paper.doi}")
+    loguru.logger.info(f"download folder {paper.doi}")
+    return folders
+
+
 @app.post("/papers/")
+@cache(expire=expires)
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
     collection_name = query.collection_name
@@ -125,12 +120,13 @@ async def get_papers(query: QueryPaper):
         else:
             results = database.query(collection_name=collection_name, query_text=text, query_filter=doi_filter, with_vectors=query.with_vectors, limit=query.limit)
         loguru.logger.info(f"RESULTS RECEIVED:\n")
-        loguru.logger.info(f"{results[0].document}")
-        return [] if len(results) < 1 else results[0].document
+        end_results = [r.document for r in results]
+        loguru.logger.info(f"{end_results}")
+        return end_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    uvicorn.run(app, timeout_keep_alive=500, ws_ping_timeout= 200, host="0.0.0.0", ws_max_queue = 100, port=int(os.getenv("PORT", 8000)))
