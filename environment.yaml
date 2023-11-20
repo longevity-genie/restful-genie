@@ -14,7 +14,7 @@ dependencies:
       - pycomfort
       - gspread
       - polars
-      - getpaper>=0.4.2
+      - getpaper>=0.4.3
       - indexpaper>=0.0.15
       - langchain>=0.0.333
       - langserve>=0.0.29

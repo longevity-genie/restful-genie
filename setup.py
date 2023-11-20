@@ -21,7 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     packages=find_packages(),
-    install_requires=['pycomfort', 'click', 'gspread', "getpaper>=0.4.2", "polars", "indexpaper>=0.0.15"],
+    install_requires=['pycomfort', 'click', 'gspread', "getpaper>=0.4.3", "polars", "indexpaper>=0.0.15"],
     keywords=['python', 'llm', 'science', 'review', 'spreadsheets'],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

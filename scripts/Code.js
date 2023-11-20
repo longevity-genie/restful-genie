@@ -58,6 +58,11 @@ function GPT_3_5(textValue, temperature=0.0, cache_seconds = 3600) {
     return GPT(textValue, model_name='gpt-3.5-turbo', temperature=temperature, cache_seconds=cache_seconds)
 }
 
+function GPT4(textValue, temperature=0.0, cache_seconds = 3600) {
+    //just an alias to GPT_4
+    return GPT(textValue, model_name='gpt-4', temperature=temperature, cache_seconds=cache_seconds)
+}
+
 function GPT_4(textValue, temperature=0.0, cache_seconds = 3600) {
     return GPT(textValue, model_name='gpt-4', temperature=temperature, cache_seconds=cache_seconds)
 }
@@ -106,7 +111,7 @@ function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5', 
     cache.put(cacheKey, responseText, cache_seconds);
   }
 
-  return responseText;
+  return responseText
 }
 
 
