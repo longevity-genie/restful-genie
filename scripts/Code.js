@@ -67,7 +67,16 @@ function GPT_4(textValue, temperature=0.0, cache_seconds = 3600) {
     return GPT(textValue, model_name='gpt-4', temperature=temperature, cache_seconds=cache_seconds)
 }
 
-function download_paper(doi, selenium_on_fail, scihub_on_fail, parser, subfolder, do_not_reparse, selenium_min_wait, selenium_max_wait, cache_seconds = 3600) {
+function download_paper(doi,
+  selenium_on_fail = true,
+  scihub_on_fail = false,
+  parser = "py_mu_pdf",
+  subfolder = true,
+  do_not_reparse = true,
+  selenium_min_wait = 15,
+  selenium_max_wait = 60,
+  cache_seconds = 3600)
+{
   var cache = CacheService.getScriptCache();
 
   // Create a unique cache key based on the parameters

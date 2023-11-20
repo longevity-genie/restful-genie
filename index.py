@@ -14,7 +14,7 @@ from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
 from getpaper.download import PaperDownload
-from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper
+from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper, PaperDownloadRequest
 
 from fastapi.openapi.utils import get_openapi
 
@@ -45,6 +45,7 @@ client = QdrantClient(
 
 client.set_model(env_embed_model)
 
+
 app = FastAPI(
     # Initialize FastAPI cache with in-memory backend
     title="Biotable server",
@@ -74,20 +75,17 @@ async def ask_gpt(query: QueryLLM):
     return result.content
 
 @app.post("/download_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
-async def parse_pdf_post(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,
-                    parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True,
-                    selenium_min_wait: int = 15, selenium_max_wait: int = 60
-                    ):
+async def parse_pdf_post(request: PaperDownloadRequest):
     #code duplication to check if ChatGPT action can deal with it
     destination = locations.papers
     logger = loguru.logger
     logger.add(sys.stdout)
-    downloaded_and_parsed = try_download_and_parse(doi, destination, selenium_on_fail, scihub_on_fail,
-                                                   parser, subfolder, do_not_reparse,
-                                                   selenium_min_wait=selenium_min_wait, selenium_max_wait=selenium_max_wait,
+    downloaded_and_parsed = try_download_and_parse(request.doi, destination, request.selenium_on_fail, request.scihub_on_fail,
+                                                   request.parser, request.subfolder, request.do_not_reparse,
+                                                   selenium_min_wait=request.selenium_min_wait, selenium_max_wait=request.selenium_max_wait,
                                                    logger=logger) #paper_id, download, metadata
     downloaded_and_parsed.on_failure(lambda e: logger.error(f"issue with {e}"))
-    return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(doi, None, None))
+    return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(request.doi, None, None))
 
 
 @app.get("/get_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)

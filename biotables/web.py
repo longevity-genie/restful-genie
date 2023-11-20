@@ -4,7 +4,17 @@ from typing import Optional
 import loguru
 from langchain.chat_models import ChatOpenAI
 from pydantic import BaseModel
+from getpaper.parse import PDFParser
 
+class PaperDownloadRequest(BaseModel):
+    doi: str
+    selenium_on_fail: bool = False,
+    scihub_on_fail: bool = False,
+    parser: PDFParser = PDFParser.py_mu_pdf
+    subfolder: bool = True
+    do_not_reparse: bool = True,
+    selenium_min_wait: int = 15,
+    selenium_max_wait: int = 60
 
 class QueryPaper(BaseModel):
     doi: Optional[str] = None
