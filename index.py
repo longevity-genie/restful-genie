@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 import os
 
-import loguru
 from fastapi import FastAPI, HTTPException
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
+from getpaper.download import PaperDownload
 from getpaper.parse import *
 from langchain.chat_models import ChatOpenAI
 from langserve import add_routes
-from loguru import logger
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
-from getpaper.download import PaperDownload
-from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper, PaperDownloadRequest
 
-from fastapi.openapi.utils import get_openapi
+from biotables.web import QueryLLM, SettingsLLM, QueryPaper, PaperDownloadRequest
 
 load_environment_keys(usecwd=True)
 
@@ -75,6 +72,7 @@ async def ask_gpt(query: QueryLLM):
     return result.content
 
 @app.post("/download_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
+@cache(expire=expires)
 async def parse_pdf_post(request: PaperDownloadRequest):
     #code duplication to check if ChatGPT action can deal with it
     destination = locations.papers
@@ -89,6 +87,7 @@ async def parse_pdf_post(request: PaperDownloadRequest):
 
 
 @app.get("/get_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
+@cache(expire=expires)
 async def parse_pdf(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,
                     parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True,
                     selenium_min_wait: int = 15, selenium_max_wait: int = 60
