@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 import os
-from pathlib import Path
-from typing import Optional, Union, List
-from getpaper.parse import download_and_parse
 
 import loguru
 from fastapi import FastAPI, HTTPException
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
+from getpaper.parse import *
 from langchain.chat_models import ChatOpenAI
 from langserve import add_routes
+from loguru import logger
 from pycomfort.config import load_environment_keys
-from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
-
+from getpaper.download import PaperDownload
 from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper
 
 load_environment_keys(usecwd=True)
@@ -75,19 +73,16 @@ async def ask_gpt(query: QueryLLM):
     #loguru.logger.info(result)
     return result.content
 
+@app.get("/get_paper/", response_model=PaperDownload)
+async def parse_pdf(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,  parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True):
+    destination = locations.papers
+    logger = loguru.logger
+    logger.add(sys.stdout)
+    downloaded_and_parsed= try_download_and_parse(doi, destination, selenium_on_fail, scihub_on_fail, parser, subfolder, do_not_reparse, logger) #paper_id, download, metadata
+    return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(doi))
 
 
-@app.post("/ask_paper/", response_model=List[str])
-@cache(expire=expires)
-async def ask_paper(paper: AskPaper):
-    folders: List[Path] = download_and_parse(paper.doi, locations.papers, subfolder=True, do_not_reparse=True)
-    if len(folders) <1:
-        loguru.logger.error(f"nothing was downloaded/parsed for {paper.doi}")
-    loguru.logger.info(f"download folder {paper.doi}")
-    return folders
-
-
-@app.post("/papers/")
+@app.post("/papers/", response_model=List[str])
 @cache(expire=expires)
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
@@ -115,7 +110,7 @@ async def get_papers(query: QueryPaper):
             )
         else:
             doi_filter = None
-        if text is None or text is "string":
+        if text is None or text == "string":
             results = database.scroll(collection_name=collection_name, scroll_filter=doi_filter, with_payload=query.with_payload, with_vectors=query.with_vectors, limit=query.limit)
         else:
             results = database.query(collection_name=collection_name, query_text=text, query_filter=doi_filter, with_vectors=query.with_vectors, limit=query.limit)

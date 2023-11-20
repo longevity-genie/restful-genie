@@ -14,10 +14,10 @@ dependencies:
       - pycomfort
       - gspread
       - polars
-      - getpaper>=0.3.7
+      - getpaper>=0.4.2
       - indexpaper>=0.0.15
       - langchain>=0.0.333
-      - langserve>=0.0.27
+      - langserve>=0.0.29
       - sse_starlette
       - langchain-cli
       - uvicorn[standard]
