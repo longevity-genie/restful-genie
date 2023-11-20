@@ -16,6 +16,8 @@ from qdrant_client.http.models import models
 from getpaper.download import PaperDownload
 from biotables.web import QueryLLM, SettingsLLM, AskPaper, QueryPaper
 
+from fastapi.openapi.utils import get_openapi
+
 load_environment_keys(usecwd=True)
 
 from biotables.locations import Locations
@@ -64,16 +66,31 @@ default_settings: SettingsLLM = SettingsLLM(key=env_key)
 
 default_llm = default_settings.make_openai_chat()
 
-@app.post("/gpt/", response_model=str)
+@app.post("/gpt/", description="calls chat gpt api, receives QueryLLM with model parameters as input", include_in_schema=False, response_model=str)
 @cache(expire=expires)
 async def ask_gpt(query: QueryLLM):
     llm = default_llm if default_settings.same_settings(query) else query.make_openai_chat()
     result = await llm.ainvoke(query.text)
-    #loguru.logger.info("RESPONSE WAS:")
-    #loguru.logger.info(result)
     return result.content
 
-@app.get("/get_paper/", response_model=PaperDownload)
+@app.post("/download_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
+async def parse_pdf_post(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,
+                    parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True,
+                    selenium_min_wait: int = 15, selenium_max_wait: int = 60
+                    ):
+    #code duplication to check if ChatGPT action can deal with it
+    destination = locations.papers
+    logger = loguru.logger
+    logger.add(sys.stdout)
+    downloaded_and_parsed = try_download_and_parse(doi, destination, selenium_on_fail, scihub_on_fail,
+                                                   parser, subfolder, do_not_reparse,
+                                                   selenium_min_wait=selenium_min_wait, selenium_max_wait=selenium_max_wait,
+                                                   logger=logger) #paper_id, download, metadata
+    downloaded_and_parsed.on_failure(lambda e: logger.error(f"issue with {e}"))
+    return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(doi, None, None))
+
+
+@app.get("/get_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
 async def parse_pdf(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,
                     parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True,
                     selenium_min_wait: int = 15, selenium_max_wait: int = 60
@@ -89,7 +106,7 @@ async def parse_pdf(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bo
     return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(doi, None, None))
 
 
-@app.post("/papers/", response_model=List[str])
+@app.post("/papers/", description="does a search in the vector bases for the papers that fit the query", response_model=List[str])
 @cache(expire=expires)
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
@@ -127,6 +144,10 @@ async def get_papers(query: QueryPaper):
         return end_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/version", description="return the version of the current biotables project", response_model=str)
+async def version():
+    return '0.0.5'
 
 
 if __name__ == "__main__":

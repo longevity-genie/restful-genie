@@ -67,6 +67,59 @@ function GPT_4(textValue, temperature=0.0, cache_seconds = 3600) {
     return GPT(textValue, model_name='gpt-4', temperature=temperature, cache_seconds=cache_seconds)
 }
 
+function download_paper(doi, selenium_on_fail, scihub_on_fail, parser, subfolder, do_not_reparse, selenium_min_wait, selenium_max_wait, cache_seconds = 3600) {
+  var cache = CacheService.getScriptCache();
+
+  // Create a unique cache key based on the parameters
+  var cache_key = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, doi + "-" + selenium_on_fail + "-" + scihub_on_fail + "-" + parser + "-" + subfolder + "-" + do_not_reparse + "-" + selenium_min_wait + "-" + selenium_max_wait);
+  var cache_key_string = cache_key.reduce(function(str, chr) {
+    chr = (chr < 0 ? chr + 256 : chr).toString(16);
+    return str + (chr.length == 1 ? '0' : '') + chr;
+  }, '');
+
+  // Check if the response is already in the cache
+  if (cache_seconds > 0) {
+    var cached_response = cache.get(cache_key_string);
+    if (cached_response != null) {
+      return JSON.parse(cached_response);
+    }
+  }
+
+  // FastAPI endpoint URL
+  var fast_api_url = 'http://agingkills.eu:8000/download_paper/';
+
+  // Payload for the POST request
+  var payload = {
+    "doi": doi,
+    "selenium_on_fail": selenium_on_fail,
+    "scihub_on_fail": scihub_on_fail,
+    "parser": parser,
+    "subfolder": subfolder,
+    "do_not_reparse": do_not_reparse,
+    "selenium_min_wait": selenium_min_wait,
+    "selenium_max_wait": selenium_max_wait
+  };
+
+  // Options for the POST request
+  var options = {
+    'method' : 'post',
+    'contentType': 'application/json',
+    'payload' : JSON.stringify(payload)
+  };
+
+  // Make the request
+  var response = UrlFetchApp.fetch(fast_api_url, options);
+  var response_text = response.getContentText();
+
+  // Cache the response
+  if (cache_seconds > 0) {
+    cache.put(cache_key_string, response_text, cache_seconds);
+  }
+
+  // Parse and return the response
+  return JSON.parse(response_text);
+}
+
 function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5', host='http://agingkills.eu:8000', api = "/papers", limit=1, with_vectors=false, with_payload=true, resplit = true, cache_seconds = 3600) {
     var cacheKey = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5,  textValue + "-" + collection_name + "-" + limit);
     var cacheKeyString = cacheKey.reduce(function(str, chr){
