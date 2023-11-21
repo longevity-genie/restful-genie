@@ -15,7 +15,7 @@ dependencies:
       - gspread
       - polars
       - pydantic==1.10.12
-      - getpaper>=0.4.5
+      - getpaper>=0.4.7
       - indexpaper>=0.0.15
       - langchain>=0.0.333
       - langserve>=0.0.29

@@ -8,7 +8,6 @@ from fastapi_cache.decorator import cache
 from getpaper.download import PaperDownload
 from getpaper.parse import *
 from langchain.chat_models import ChatOpenAI
-from langserve import add_routes
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
@@ -53,11 +52,15 @@ app = FastAPI(
 
 FastAPICache.init(InMemoryBackend())
 
+"""
+# we do not really need langserve stuff right noww
+from langserve import add_routes
 add_routes(
     app,
     ChatOpenAI(),
     path="/openai"
 )
+"""
 
 
 default_settings: SettingsLLM = SettingsLLM(key=env_key)
@@ -70,6 +73,7 @@ async def ask_gpt(query: QueryLLM):
     llm = default_llm if default_settings.same_settings(query) else query.make_openai_chat()
     result = await llm.ainvoke(query.text)
     return result.content
+
 
 @app.post("/download_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
 @cache(expire=expires)
@@ -86,24 +90,7 @@ async def parse_pdf_post(request: PaperDownloadRequest):
     return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(request.doi, None, None))
 
 
-@app.get("/get_paper/", description="does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs", response_model=PaperDownload)
-@cache(expire=expires)
-async def parse_pdf(doi: str, selenium_on_fail: bool = False, scihub_on_fail: bool = False,
-                    parser: PDFParser = PDFParser.py_mu_pdf, subfolder: bool = True, do_not_reparse: bool = True,
-                    selenium_min_wait: int = 15, selenium_max_wait: int = 60
-                    ):
-    destination = locations.papers
-    logger = loguru.logger
-    logger.add(sys.stdout)
-    downloaded_and_parsed = try_download_and_parse(doi, destination, selenium_on_fail, scihub_on_fail,
-                                                  parser, subfolder, do_not_reparse,
-                                                  selenium_min_wait=selenium_min_wait, selenium_max_wait=selenium_max_wait,
-                                                  logger=logger) #paper_id, download, metadata
-    downloaded_and_parsed.on_failure(lambda e: logger.error(f"issue with {e}"))
-    return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(doi, None, None))
-
-
-@app.post("/papers/", description="does a search in the vector bases for the papers that fit the query", response_model=List[str])
+@app.post("/semantic_search/", description="does a search in the vector bases for the papers that fit the query", response_model=List[str])
 @cache(expire=expires)
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")

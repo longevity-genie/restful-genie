@@ -16,6 +16,7 @@ class PaperDownloadRequest(BaseModel):
     selenium_min_wait: int = 15,
     selenium_max_wait: int = 60
 
+
 class QueryPaper(BaseModel):
     doi: Optional[str] = None
     text: Optional[str] = None
@@ -23,7 +24,7 @@ class QueryPaper(BaseModel):
     with_vectors: bool = False
     with_payload: bool = True
     db: Optional[str] = None
-    limit: int = 1
+    limit: int = 5
 
 
 class SettingsLLM(BaseModel):
