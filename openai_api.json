@@ -3,8 +3,8 @@
   "info": {
     "title": "Longevity Genie and biotables REST API",
     "description": "This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://agingkills.eu/privacy-policy).",
-    "termsOfService": "http://agingkills.eu/terms/",
-    "version": "0.0.6"
+    "termsOfService": "https://agingkills.eu/terms/",
+    "version": "0.0.9"
   },
   "paths": {
     "/download_paper/": {
