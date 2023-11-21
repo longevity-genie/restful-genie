@@ -161,3 +161,9 @@ cython_debug/
 local_cache
 node_modules
 yarn.lock
+
+#Certificates
+*.pem
+*.csr
+*.key
+*.p7c
