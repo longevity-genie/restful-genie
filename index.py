@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     # Define the paths for SSL certificate files using pathlib
     ssl_keyfile = Path("agingkills.eu.key")
-    ssl_certfile = Path("Certificate#1974954472.pem")
+    ssl_certfile = Path("Certificate.pem")
 
     if ssl_keyfile.exists() and ssl_certfile.exists():
         # SSL certificates are available, run with HTTPS
