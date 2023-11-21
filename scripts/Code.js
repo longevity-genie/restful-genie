@@ -1,21 +1,134 @@
 function onOpen(){
-    console.log("biotables extension opened");
+
+}
+
+/**
+ * Retrieves cached data for a given key.
+ *
+ * @param {string} cacheKey - The key to retrieve data for.
+ * @return {Object|null} Cached data or null if not found.
+ */
+function getCachedData(cacheKey) {
+  var cache = CacheService.getScriptCache();
+  var cachedResponse = cache.get(cacheKey);
+  if (cachedResponse != null) {
+    return JSON.parse(cachedResponse);
+  }
+  return null; // No cached data found
+}
+
+
+/**
+ * Generates a cache key based on provided arguments.
+ *
+ * @param {Array} args - Array of arguments to generate the key from.
+ * @return {string} The generated cache key.
+ */
+function generateCacheKey(args) {
+  var keyString = args.join('-');
+  var keyBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, keyString, Utilities.Charset.UTF_8);
+  var cacheKey = keyBytes.map(function(byte) {
+    var byteHex = (byte < 0 ? byte + 256 : byte).toString(16);
+    return byteHex.length === 1 ? '0' + byteHex : byteHex;
+  }).join('');
+  return cacheKey;
+}
+
+
+/**
+ * Updates the cache with new data.
+ *
+ * @param {string} cacheKey - The key to update data for.
+ * @param {Object} data - The data to cache.
+ * @param {number} cacheTime - Time in seconds to keep the data in cache.
+ */
+function updateCache(cacheKey, data, cacheTime) {
+  var cache = CacheService.getScriptCache();
+  cache.put(cacheKey, JSON.stringify(data), cacheTime);
+}
+
+/**
+ * Main function to download a paper.
+ *
+ * @param {string} doi - The DOI of the paper.
+ * @param {boolean} [selenium_on_fail=true] - Use Selenium on failure.
+ * @param {boolean} [scihub_on_fail=true] - Use SciHub on failure.
+ * @param {number} [cache_seconds=3600] - Cache duration in seconds, no cache if <=0
+ * @param {string} [parser="py_mu_pdf"] - Parser to use.
+ * @param {boolean} [subfolder=true] - Whether to use subfolders.
+ * @param {boolean} [do_not_reparse=true] - Flag to avoid reparsing.
+ * @param {number} [selenium_min_wait=15] - Minimum wait time for Selenium.
+ * @param {number} [selenium_max_wait=60] - Maximum wait time for Selenium.
+ * @return {Object} Downloaded paper data or error info.
+ */
+function DOWNLOAD_PAPER(doi, selenium_on_fail, scihub_on_fail, cache_seconds, parser, subfolder, do_not_reparse, selenium_min_wait, selenium_max_wait) {
+  // Handling default values
+  selenium_on_fail = (selenium_on_fail === undefined) ? true : selenium_on_fail;
+  scihub_on_fail = (scihub_on_fail === undefined) ? true : scihub_on_fail;
+  parser = (parser === undefined) ? "py_mu_pdf" : parser;
+  subfolder = (subfolder === undefined) ? true : subfolder;
+  do_not_reparse = (do_not_reparse === undefined) ? true : do_not_reparse;
+  selenium_min_wait = (selenium_min_wait === undefined) ? 15 : selenium_min_wait;
+  selenium_max_wait = (selenium_max_wait === undefined) ? 60 : selenium_max_wait;
+  cache_seconds = (cache_seconds === undefined) ? 3600 : cache_seconds;
+
+  // Generate the cache key
+  var cacheKey = generateCacheKey([doi, selenium_on_fail, scihub_on_fail, parser, subfolder, do_not_reparse, selenium_min_wait, selenium_max_wait]);
+
+  // Check if the response is already in the cache
+  var cachedData = getCachedData(cacheKey);
+  if (cachedData != null) {
+    return cachedData;
+  }
+
+  // Define the FastAPI endpoint URL and payload for the POST request
+  var fastApiUrl = 'http://agingkills.eu:8000/download_paper/';
+  var payload = {
+    "doi": doi,
+    "selenium_on_fail": selenium_on_fail,
+    "scihub_on_fail": scihub_on_fail,
+    "parser": parser,
+    "subfolder": subfolder,
+    "do_not_reparse": do_not_reparse,
+    "selenium_min_wait": selenium_min_wait,
+    "selenium_max_wait": selenium_max_wait
+  };
+
+  // Options for the POST request
+  var options = {
+    'method': 'post',
+    'contentType': 'application/json',
+    'payload': JSON.stringify(payload)
+  };
+  console.info(options);
+
+  // Make the request and handle errors
+  try {
+    var response = UrlFetchApp.fetch(fastApiUrl, options);
+    var responseText = response.getContentText();
+
+    // Parse the response and cache it if successful
+    var result = JSON.parse(responseText);
+    console.info(result);
+    if (cache_seconds > 0 && response.getResponseCode() == 200) {
+      updateCache(cacheKey, result, cache_seconds);
+    }
+
+    return result.pdf; // Assuming the response contains a 'pdf' field
+  } catch (e) {
+    Logger.log("Error in download_paper: " + e.toString());
+    return { "error": true, "message": e.toString() };
+  }
 }
 
 function GPT(textValue, model_name='gpt-3.5-turbo', temperature=0.0, resplit = true, parse_escaped_quotes = true, host='http://agingkills.eu:8000', api = "/gpt", limit=1, cache_seconds = 3600) {
-  // Generate a hash key for caching
-  var cacheKey = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, textValue + "-" + model_name);
-  var cacheKeyString = cacheKey.reduce(function(str, chr){
-    chr = (chr < 0 ? chr + 256 : chr).toString(16);
-    return str + (chr.length == 1 ? '0' : '') + chr;
-  }, '');
+  // Generate the cache key
+  var cacheKey = generateCacheKey([textValue, model_name]);
 
-  if (cache_seconds > 0) {
-    var cache = CacheService.getScriptCache();
-    var cachedResponse = cache.get(cacheKeyString);
-    if (cachedResponse != null) {
-      return cachedResponse;
-    }
+  // Check if the response is already in the cache
+  var cachedData = getCachedData(cacheKey);
+  if (cachedData != null) {
+    return cachedData;
   }
 
   // Prepare the data for the API call
@@ -47,11 +160,12 @@ function GPT(textValue, model_name='gpt-3.5-turbo', temperature=0.0, resplit = t
 
   // Cache the new response if caching is enabled
   if (cache_seconds > 0) {
-    cache.put(cacheKeyString, responseText, cache_seconds);
+    updateCache(cacheKey, responseText, cache_seconds);
   }
 
   return responseText;
 }
+
 
 
 function GPT_3_5(textValue, temperature=0.0, cache_seconds = 3600) {
@@ -67,93 +181,14 @@ function GPT_4(textValue, temperature=0.0, cache_seconds = 3600) {
     return GPT(textValue, model_name='gpt-4', temperature=temperature, cache_seconds=cache_seconds)
 }
 
-function download_paper(doi, selenium_on_fail, scihub_on_fail, parser, subfolder, do_not_reparse, selenium_min_wait, selenium_max_wait, cache_seconds) {
-  // Handling default values
-  selenium_on_fail = (selenium_on_fail === undefined) ? true : selenium_on_fail;
-  scihub_on_fail = (scihub_on_fail === undefined) ? false : scihub_on_fail;
-  parser = (parser === undefined) ? "py_mu_pdf" : parser;
-  subfolder = (subfolder === undefined) ? true : subfolder;
-  do_not_reparse = (do_not_reparse === undefined) ? true : do_not_reparse;
-  selenium_min_wait = (selenium_min_wait === undefined) ? 15 : selenium_min_wait;
-  selenium_max_wait = (selenium_max_wait === undefined) ? 60 : selenium_max_wait;
-  cache_seconds = (cache_seconds === undefined) ? 3600 : cache_seconds;
-
-  var cache = CacheService.getScriptCache();
-
-  // Create a unique cache key based on the parameters
-  var cache_key = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, doi + "-" + selenium_on_fail + "-" + scihub_on_fail + "-" + parser + "-" + subfolder + "-" + do_not_reparse + "-" + selenium_min_wait + "-" + selenium_max_wait);
-  var cache_key_string = cache_key.reduce(function(str, chr) {
-    chr = (chr < 0 ? chr + 256 : chr).toString(16);
-    return str + (chr.length == 1 ? '0' : '') + chr;
-  }, '');
-
-  // Check if the response is already in the cache
-  if (cache_seconds > 0) {
-    var cached_response = cache.get(cache_key_string);
-    if (cached_response != null) {
-      var cached_data = JSON.parse(cached_response);
-      if (!cached_data.error) {
-        return cached_data;
-      }
-    }
-  }
-
-  // FastAPI endpoint URL with doi as a query parameter
-  var fast_api_url = 'http://agingkills.eu:8000/download_paper/';
-
-  // Payload for the POST request (excluding 'doi')
-  var payload = {
-    "doi": doi,
-    "selenium_on_fail": selenium_on_fail,
-    "scihub_on_fail": scihub_on_fail,
-    "parser": parser,
-    "subfolder": subfolder,
-    "do_not_reparse": do_not_reparse,
-    "selenium_min_wait": selenium_min_wait,
-    "selenium_max_wait": selenium_max_wait
-  };
-
-  // Options for the POST request
-  var options = {
-    'method' : 'post',
-    'contentType': 'application/json',
-    'payload' : JSON.stringify(payload)
-  };
-
-  // Make the request with error handling
-  try {
-    var response = UrlFetchApp.fetch(fast_api_url, options);
-    var response_text = response.getContentText();
-
-    // Cache the response only if it's successful
-    if (cache_seconds > 0 && response.getResponseCode() == 200) {
-      cache.put(cache_key_string, response_text, cache_seconds);
-    }
-    result = JSON.parse(response_text)
-    console.info(result)
-
-    // Parse and return the response
-    return result.pdf;
-  } catch (e) {
-    // Handle errors
-    Logger.log("Error in download_paper: " + e.toString());
-    return {"error": true, "message": e.toString()};
-  }
-}
-
-function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5', host='http://agingkills.eu:8000', api = "/papers", limit=1, with_vectors=false, with_payload=true, resplit = true, cache_seconds = 3600) {
-    var cacheKey = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5,  textValue + "-" + collection_name + "-" + limit);
-    var cacheKeyString = cacheKey.reduce(function(str, chr){
-      chr = (chr < 0 ? chr + 256 : chr).toString(16);
-      return str + (chr.length == 1 ? '0' : '') + chr;
-    }, '');
+function SEMANTIC_SEARCH(textValue, limit=1, collection_name='bge_base_en_v1.5_aging_5', host='http://agingkills.eu:8000', api = "/semantic_search", with_vectors=false, with_payload=true, resplit = true, cache_seconds = 3600) {
+  // Generate the cache key using the generateCacheKey function
+  var cacheKey = generateCacheKey([textValue, collection_name, limit]);
 
   // Check if caching is enabled and if the response is already in the cache
-  if (cache_seconds > 0) {
-    var cachedResponse = cache.get(cacheKey);
-    if (cachedResponse != null) {
-      return cachedResponse;
-    }
+  var cachedData = getCachedData(cacheKey);
+  if (cachedData != null) {
+    return cachedData;
   }
 
   // If not cached or cache is disabled, proceed with the API call
@@ -171,22 +206,26 @@ function SEMANTIC_SEARCH(textValue, collection_name='bge_base_en_v1.5_aging_5', 
     'payload' : JSON.stringify(data)
   };
 
-  var url = host + api;
-  var response = UrlFetchApp.fetch(url, options);
-  var responseText = response.getContentText();
+  // Make the request and handle errors
+  try {
+    var url = host + api;
+    var response = UrlFetchApp.fetch(url, options);
+    var responseText = response.getContentText();;
 
-  // Replace \n with new lines if resplit is true
-  if(resplit) {
-    responseText = responseText.replace(/\\n/g, "\n");
+    // Parse the response and cache it if successful
+    var result = JSON.parse(responseText);
+    console.info(result);
+    if (cache_seconds > 0 && response.getResponseCode() == 200) {
+      updateCache(cacheKey, result, cache_seconds);
+    }
+    if (result != null && result.length ==1) return result[0]
+    return result; // Assuming the response contains a 'pdf' field
+  } catch (e) {
+    Logger.log("Error in download_paper: " + e.toString());
+    return { "error": true, "message": e.toString() };
   }
-
-  // Cache the new response if cache is enabled
-  if (cache_seconds > 0) {
-    cache.put(cacheKey, responseText, cache_seconds);
-  }
-
-  return responseText
 }
+
 
 
 function FLATTEN_JSON(jsonString) {
