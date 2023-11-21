@@ -31,15 +31,6 @@ if env_db is None:
 else:
     url = env_db
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-)
-
 env_key = os.getenv("OPENAI_API_KEY")
 env_embed_model= os.getenv("EMBED_MODEL", "BAAI/bge-base-en-v1.5")
 
@@ -155,24 +146,33 @@ def custom_openapi():
         return app.openapi_schema
     openapi_schema = get_openapi(
         title="Longevity Genie and biotables REST API",
-        version="0.0.6",
+        version="0.0.7",
         description="This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://yourapp.com/privacy-policy).",
-        terms_of_service="http://agingkills.eu:8000/terms/",
+        terms_of_service="https://agingkills.eu/terms/",
         routes=app.routes,
     )
-    openapi_schema["servers"] = [{"url": "http://agingkills.eu:8000/"}]
-    openapi_schema["externalDocs"] = ExternalDocumentation(
-        description="Privacy Policy",
-        url="http://agingkills.eu:8000/privacy-policy"
-    ).dict()
+    if Path("agingkills.eu.key").exists():
+        openapi_schema["servers"] = [{"url": "https://agingkills.eu"}]
+        openapi_schema["externalDocs"] = ExternalDocumentation(
+            description="Privacy Policy",
+            url="https://agingkills.eu/privacy-policy"
+        ).dict()
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 app.openapi = custom_openapi
 
 @app.get("/version", description="return the version of the current biotables project", response_model=str)
 async def version():
-    return '0.0.6'
+    return '0.0.9'
 
 
 if __name__ == "__main__":
