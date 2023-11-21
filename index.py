@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 import os
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import FileResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
-from getpaper.download import PaperDownload
 from getpaper.parse import *
-from langchain.chat_models import ChatOpenAI
+from fastapi.openapi.models import ExternalDocumentation
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
@@ -128,6 +130,35 @@ async def get_papers(query: QueryPaper):
         return end_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/privacy-policy")
+async def privacy_policy():
+    return FileResponse('privacy_policy.md')
+
+@app.get("/terms")
+async def terms_of_service():
+    return FileResponse('terms_of_service.md')
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Longevity Genie and biotables REST API",
+        version="0.0.6",
+        description="This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://yourapp.com/privacy-policy).",
+        terms_of_service="http://agingkills.eu:8000/terms/",
+        routes=app.routes,
+    )
+    openapi_schema["servers"] = [{"url": "http://agingkills.eu:8000/"}]
+    openapi_schema["externalDocs"] = ExternalDocumentation(
+        description="Privacy Policy",
+        url="http://agingkills.eu:8000/privacy-policy"
+    ).dict()
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 @app.get("/version", description="return the version of the current biotables project", response_model=str)
 async def version():
