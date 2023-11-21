@@ -13,6 +13,7 @@ from fastapi.openapi.models import ExternalDocumentation
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import models
+from starlette.middleware.cors import CORSMiddleware
 
 from biotables.web import QueryLLM, SettingsLLM, QueryPaper, PaperDownloadRequest
 
@@ -29,6 +30,15 @@ if env_db is None:
     url = "https://5bea7502-97d4-4876-98af-0cdf8af4bd18.us-east-1-0.aws.cloud.qdrant.io:6333"
 else:
     url = env_db
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 env_key = os.getenv("OPENAI_API_KEY")
 env_embed_model= os.getenv("EMBED_MODEL", "BAAI/bge-base-en-v1.5")
@@ -162,9 +172,25 @@ app.openapi = custom_openapi
 
 @app.get("/version", description="return the version of the current biotables project", response_model=str)
 async def version():
-    return '0.0.5'
+    return '0.0.6'
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, timeout_keep_alive=500, ws_ping_timeout= 200, host="0.0.0.0", ws_max_queue = 100, port=int(os.getenv("PORT", 8000)))
+
+    # Define the paths for SSL certificate files using pathlib
+    ssl_keyfile = Path("agingkills.eu.key")
+    ssl_certfile = Path("Certificate#1974954472.pem")
+
+    if ssl_keyfile.exists() and ssl_certfile.exists():
+        # SSL certificates are available, run with HTTPS
+        uvicorn.run(app,
+                    host="0.0.0.0",
+                    port=443,  # Use port 443 for HTTPS
+                    ssl_keyfile=str(ssl_keyfile),
+                    ssl_certfile=str(ssl_certfile))
+    else:
+        # SSL certificates are not available, run without HTTPS
+        uvicorn.run(app,
+                    host="0.0.0.0",
+                    port=int(os.getenv("PORT", 8000)))

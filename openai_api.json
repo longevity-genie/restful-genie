@@ -1,0 +1,341 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Longevity Genie and biotables REST API",
+    "description": "This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://agingkills.eu/privacy-policy).",
+    "termsOfService": "http://agingkills.eu/terms/",
+    "version": "0.0.6"
+  },
+  "paths": {
+    "/download_paper/": {
+      "post": {
+        "summary": "Parse Pdf Post",
+        "description": "does downloading and parsing of the model, can optionally fallback to selenium and/or schi-hub for hard to download pdfs",
+        "operationId": "parse_pdf_post_download_paper__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperDownloadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperDownload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/semantic_search/": {
+      "post": {
+        "summary": "Get Papers",
+        "description": "does a search in the vector bases for the papers that fit the query",
+        "operationId": "get_papers_semantic_search__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryPaper"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response Get Papers Semantic Search  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy-policy": {
+      "get": {
+        "summary": "Privacy Policy",
+        "operationId": "privacy_policy_privacy_policy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/terms": {
+      "get": {
+        "summary": "Terms Of Service",
+        "operationId": "terms_of_service_terms_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "summary": "Version",
+        "description": "return the version of the current biotables project",
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "title": "Response Version Version Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PDFParser": {
+        "enum": [
+          "unstructured",
+          "pdf_miner",
+          "py_pdf",
+          "py_mu_pdf",
+          "pdfplumber"
+        ],
+        "title": "PDFParser",
+        "description": "An enumeration."
+      },
+      "PaperDownload": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "pdf": {
+            "type": "string",
+            "format": "path",
+            "title": "Pdf"
+          },
+          "metadata": {
+            "type": "string",
+            "format": "path",
+            "title": "Metadata"
+          },
+          "parsed": {
+            "items": {
+              "type": "string",
+              "format": "path"
+            },
+            "type": "array",
+            "title": "Parsed"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "pdf",
+          "metadata"
+        ],
+        "title": "PaperDownload"
+      },
+      "PaperDownloadRequest": {
+        "properties": {
+          "doi": {
+            "type": "string",
+            "title": "Doi"
+          },
+          "selenium_on_fail": {
+            "type": "boolean",
+            "title": "Selenium On Fail",
+            "default": false
+          },
+          "scihub_on_fail": {
+            "type": "boolean",
+            "title": "Scihub On Fail",
+            "default": false
+          },
+          "parser": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PDFParser"
+              }
+            ],
+            "default": "py_mu_pdf"
+          },
+          "subfolder": {
+            "type": "boolean",
+            "title": "Subfolder",
+            "default": true
+          },
+          "do_not_reparse": {
+            "type": "boolean",
+            "title": "Do Not Reparse",
+            "default": true
+          },
+          "selenium_min_wait": {
+            "type": "integer",
+            "title": "Selenium Min Wait",
+            "default": 15
+          },
+          "selenium_max_wait": {
+            "type": "integer",
+            "title": "Selenium Max Wait",
+            "default": 60
+          }
+        },
+        "type": "object",
+        "required": [
+          "doi"
+        ],
+        "title": "PaperDownloadRequest"
+      },
+      "QueryPaper": {
+        "properties": {
+          "doi": {
+            "type": "string",
+            "title": "Doi"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "collection_name": {
+            "type": "string",
+            "title": "Collection Name",
+            "default": "bge_base_en_v1.5_aging_5"
+          },
+          "with_vectors": {
+            "type": "boolean",
+            "title": "With Vectors",
+            "default": false
+          },
+          "with_payload": {
+            "type": "boolean",
+            "title": "With Payload",
+            "default": true
+          },
+          "db": {
+            "type": "string",
+            "title": "Db"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 5
+          }
+        },
+        "type": "object",
+        "title": "QueryPaper"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://agingkills.eu"
+    }
+  ],
+  "externalDocs": {
+    "description": "Privacy Policy",
+    "url": "https://agingkills.eu/privacy-policy"
+  }
+}
