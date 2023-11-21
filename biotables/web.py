@@ -24,7 +24,7 @@ class QueryPaper(BaseModel):
     with_vectors: bool = False
     with_payload: bool = True
     db: Optional[str] = None
-    limit: int = 5
+    limit: int = 10
 
 
 class SettingsLLM(BaseModel):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+from typing import List
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -12,6 +13,7 @@ from getpaper.parse import *
 from fastapi.openapi.models import ExternalDocumentation
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
+from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http.models import models
 from starlette.middleware.cors import CORSMiddleware
 
@@ -93,7 +95,7 @@ async def parse_pdf_post(request: PaperDownloadRequest):
     return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(request.doi, None, None))
 
 
-@app.post("/semantic_search/", description="does a search in the vector bases for the papers that fit the query", response_model=List[str])
+@app.post("/semantic_search/", description="does semantic search in the literature, provides sources together with answers", response_model=List[str])
 @cache(expire=expires)
 async def get_papers(query: QueryPaper):
     loguru.logger.info(f"executing get papers with {query.text}")
@@ -123,12 +125,16 @@ async def get_papers(query: QueryPaper):
             doi_filter = None
         if text is None or text == "string":
             results = database.scroll(collection_name=collection_name, scroll_filter=doi_filter, with_payload=query.with_payload, with_vectors=query.with_vectors, limit=query.limit)
+            end_results = [r.document for r in results]
+            loguru.logger.trace(f"RESULTS RECEIVED:\n {end_results}")
+            return end_results
         else:
-            results = database.query(collection_name=collection_name, query_text=text, query_filter=doi_filter, with_vectors=query.with_vectors, limit=query.limit)
-        loguru.logger.info(f"RESULTS RECEIVED:\n")
-        end_results = [r.document for r in results]
-        loguru.logger.info(f"{end_results}")
-        return end_results
+            def query_to_answer(q: QueryResponse)-> str:
+                return f"{q.document} SOURCE: {'http://doi.org/'+q.metadata['doi'] if 'doi' in q.metadata and q.metadata['doi'] is not None else q.metadata['source']}"
+            results: list[QueryResponse] = database.query(collection_name=collection_name, query_text=text, query_filter=doi_filter, with_vectors=query.with_vectors, limit=query.limit)
+            end_results = [query_to_answer(r) for r in results]
+            loguru.logger.trace(f"RESULTS RECEIVED:\n {end_results}")
+            return end_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

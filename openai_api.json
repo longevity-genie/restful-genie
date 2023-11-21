@@ -48,8 +48,8 @@
     },
     "/semantic_search/": {
       "post": {
-        "summary": "Get Papers",
-        "description": "does a search in the vector bases for the papers that fit the query",
+        "summary": "search literature",
+        "description": "does semantic search in the literature, provides sources together with answers",
         "operationId": "get_papers_semantic_search__post",
         "requestBody": {
           "content": {
