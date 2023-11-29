@@ -192,9 +192,10 @@ if __name__ == "__main__":
         # SSL certificates are available, run with HTTPS
         uvicorn.run(app,
                     host="0.0.0.0",
-                    port=443,  # Use port 443 for HTTPS
+                    port = int(os.getenv("PORT", 443)),
                     ssl_keyfile=str(ssl_keyfile),
-                    ssl_certfile=str(ssl_certfile))
+                    ssl_certfile=str(ssl_certfile)
+                    )
     else:
         # SSL certificates are not available, run without HTTPS
         uvicorn.run(app,
