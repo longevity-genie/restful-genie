@@ -1,5 +1,5 @@
 from gspread import *
-from biotables.locations import Locations
+from restful_genie.locations import Locations
 from loguru import logger
 from typing import Optional, Union
 from pathlib import Path

@@ -1,4 +1,4 @@
-name: biotables
+name: restful-genie
 channels:
   - conda-forge
   - bioconda
@@ -17,8 +17,8 @@ dependencies:
       - pydantic==1.10.12
       - getpaper>=0.4.7
       - indexpaper>=0.0.15
-      - langchain>=0.0.333
-      - langserve>=0.0.29
+      - langchain>=0.0.343
+      - langserve>=0.0.32
       - sse_starlette
       - langchain-cli
       - uvicorn[standard]

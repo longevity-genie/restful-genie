@@ -17,16 +17,16 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http.models import models
 from starlette.middleware.cors import CORSMiddleware
 
-from biotables.web import QueryLLM, SettingsLLM, QueryPaper, PaperDownloadRequest
+from restful_genie.web import QueryLLM, SettingsLLM, QueryPaper, PaperDownloadRequest
 
 load_environment_keys(usecwd=True)
 
-from biotables.locations import Locations
+from restful_genie.locations import Locations
 locations = Locations(Path("."))
 
 expires = os.getenv("EXPIRES", 3600)
 env_db = os.getenv("DATABASE_URL")
-loguru.logger.add("logs/biotables.log", rotation="10 MB")
+loguru.logger.add("logs/restful_genie.log", rotation="10 MB")
 if env_db is None:
     loguru.logger.error(f"URL is none and DATABASE_URL environment variable is not set, using default value instead")
     url = "https://5bea7502-97d4-4876-98af-0cdf8af4bd18.us-east-1-0.aws.cloud.qdrant.io:6333"
@@ -51,7 +51,7 @@ app = FastAPI(
     # Initialize FastAPI cache with in-memory backend
     title="Biotable server",
     version="1.1",
-    description="API server to handle queries to biotables",
+    description="API server to handle queries to restful_genie",
     debug=True
 )
 
@@ -151,7 +151,7 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Longevity Genie and biotables REST API",
+        title="Longevity Genie and restful_genie REST API",
         version="0.0.7",
         description="This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://yourapp.com/privacy-policy).",
         terms_of_service="https://agingkills.eu/terms/",
@@ -176,7 +176,7 @@ app.add_middleware(
 )
 app.openapi = custom_openapi
 
-@app.get("/version", description="return the version of the current biotables project", response_model=str)
+@app.get("/version", description="return the version of the current restful_genie project", response_model=str)
 async def version():
     return '0.0.9'
 
