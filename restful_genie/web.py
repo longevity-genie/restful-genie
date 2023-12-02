@@ -23,7 +23,7 @@ class QueryPaper(BaseModel):
     collection_name: str = "bge_base_en_v1.5_aging_5"
     with_vectors: bool = False
     with_payload: bool = True
-    db: Optional[str] = None
+    db: Optional[str] = None #for opensearch should be URL
     limit: int = 10
 
 

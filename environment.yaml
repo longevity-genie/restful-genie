@@ -24,4 +24,4 @@ dependencies:
       - uvicorn[standard]
       - git+https://github.com/antonkulaga/fastapi-cache.git
       - pdfminer
-      - redis
+      - hybrid_search

@@ -11,11 +11,14 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 from getpaper.parse import *
 from fastapi.openapi.models import ExternalDocumentation
+from hybrid_search.opensearch_hybrid_search import OpenSearchHybridSearch
+from langchain.embeddings import HuggingFaceBgeEmbeddings
 from pycomfort.config import load_environment_keys
 from qdrant_client import QdrantClient
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http.models import models
 from starlette.middleware.cors import CORSMiddleware
+from hybrid_search.opensearch_hybrid_search import *
 
 from restful_genie.web import QueryLLM, SettingsLLM, QueryPaper, PaperDownloadRequest
 
@@ -49,7 +52,7 @@ client.set_model(env_embed_model)
 
 app = FastAPI(
     # Initialize FastAPI cache with in-memory backend
-    title="Biotable server",
+    title="Restful longevity genie server",
     version="1.1",
     description="API server to handle queries to restful_genie",
     debug=True
@@ -71,6 +74,19 @@ add_routes(
 default_settings: SettingsLLM = SettingsLLM(key=env_key)
 
 default_llm = default_settings.make_openai_chat()
+
+device: str = "cpu"
+embeddings_model_name = "BAAI/bge-base-en-v1.5"
+model_kwargs = {"device": device}
+encode_kwargs = {"normalize_embeddings": True}
+
+embeddings = HuggingFaceBgeEmbeddings(
+    model_name=embeddings_model_name,
+    model_kwargs=model_kwargs,
+    encode_kwargs=encode_kwargs
+)
+
+
 
 @app.post("/gpt/", description="calls chat gpt api, receives QueryLLM with model parameters as input", include_in_schema=False, response_model=str)
 @cache(expire=expires)
@@ -94,11 +110,30 @@ async def parse_pdf_post(request: PaperDownloadRequest):
     downloaded_and_parsed.on_failure(lambda e: logger.error(f"issue with {e}"))
     return downloaded_and_parsed.get_or_else_get(lambda ex: PaperDownload(request.doi, None, None))
 
+@app.post("/hybrid_search/", description="does hybrid search in the literature, provides sources together with answers", response_model=List[str])
+@cache(expire=expires)
+async def hybrid_search(query: QueryPaper):
+    loguru.logger.info(f"HYBRID SEARCH ON: '{query.text}'")
+
+    collection_name = query.collection_name
+    text = query.text
+    k = query.limit
+    url = query.db if query.db is not None else os.getenv("OPENSEARCH_URL", "https://localhost:9200")
+    docsearch = OpenSearchHybridSearch.create(url, collection_name, embeddings)
+    print(f"url={url}, index={collection_name}, query={text}")
+    results: list[Document] = docsearch.similarity_search(text, k=k, search_type = HYBRID_SEARCH, search_pipeline = "norm-pipeline")
+    print(results)
+    #loguru.logger.trace(f"RESULTS RECEIVED:\n {results}")
+    loguru.logger.info(f"RESULTS RECEIVED:\n {results}")
+    def document_to_string(d: Document)-> str:
+        return f"{d.page_content} SOURCE: {'http://doi.org/'+d.metadata['doi'] if 'doi' in d.metadata and d.metadata['doi'] is not None else d.metadata['source']}"
+    return [document_to_string(d) for d in results]
+
 
 @app.post("/semantic_search/", description="does semantic search in the literature, provides sources together with answers", response_model=List[str])
 @cache(expire=expires)
-async def get_papers(query: QueryPaper):
-    loguru.logger.info(f"executing get papers with {query.text}")
+async def semantic_search(query: QueryPaper):
+    loguru.logger.info(f"SEMANTIC SEARCH ON: '{query.text}'")
     collection_name = query.collection_name
     text = query.text
     database = client if query.db is None or query.db == env_db else QdrantClient(
@@ -152,13 +187,13 @@ def custom_openapi():
         return app.openapi_schema
     openapi_schema = get_openapi(
         title="Longevity Genie and restful_genie REST API",
-        version="0.0.7",
+        version="0.0.11",
         description="This REST service provides means for semantic search in scientific literature and downloading papers. [Privacy Policy](http://yourapp.com/privacy-policy).",
         terms_of_service="https://agingkills.eu/terms/",
         routes=app.routes,
     )
     if Path("agingkills.eu.key").exists():
-        openapi_schema["servers"] = [{"url": "https://agingkills.eu"}]
+        openapi_schema["servers"] = [{"url": "https://agingkills.eu"}, {"url": "http://localhost:8000"}]
         openapi_schema["externalDocs"] = ExternalDocumentation(
             description="Privacy Policy",
             url="https://agingkills.eu/privacy-policy"
@@ -178,7 +213,7 @@ app.openapi = custom_openapi
 
 @app.get("/version", description="return the version of the current restful_genie project", response_model=str)
 async def version():
-    return '0.0.9'
+    return '0.0.11'
 
 
 if __name__ == "__main__":

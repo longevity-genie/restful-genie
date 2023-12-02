@@ -7,9 +7,9 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-VERSION = '0.0.10'
-DESCRIPTION = 'Restful-genie, package to deliver'
-LONG_DESCRIPTION = 'Experimental package to make reviews easier'
+VERSION = '0.0.11'
+DESCRIPTION = 'Restful-genie, package to deliver REST API for LongevityGPT'
+LONG_DESCRIPTION = 'Restful-genie, package to deliver REST API for LongevityGPT'
 
 # Setting up
 setup(
@@ -21,7 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     packages=find_packages(),
-    install_requires=['pycomfort', 'click', 'gspread', "getpaper>=0.4.7", "polars", "indexpaper>=0.0.15", "pydantic==1.10.12"],
+    install_requires=['pycomfort', 'click', 'gspread', "getpaper>=0.4.7", "polars", "indexpaper>=0.0.15", "pydantic==1.10.12", 'hybrid_search'],
     keywords=['python', 'llm', 'science', 'review', 'spreadsheets'],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
